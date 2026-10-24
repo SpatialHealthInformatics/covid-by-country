@@ -3,7 +3,7 @@
 # Course:   140.628.81 Data Science for Public Health in Python, Fall 2026
 # Author:   Genie Tang (gtang10@jh.edu)
 # Script:   capstone.py
-# Version:  v17
+# Version:  v18
 #
 # Version log
 #   v1 (2026-10-19): First complete version. Loads the JHU CSSE global time
@@ -55,6 +55,11 @@
 #   v17 (2026-10-24): No change to the app itself. The write-up keeps the full
 #       v13 content with the three over-long sentences each split in two, so
 #       no sentence runs past 30 words.
+#   v18 (2026-10-24): No change to the app itself. Housekeeping on the other
+#       files: the slide deck's properties listed 55 titles carried over from
+#       an unrelated template, now rebuilt from this deck's own 10 slides; a
+#       stray "28" was removed from the closing slide; and the write-up no
+#       longer carries an empty comments part.
 #
 # How to run locally
 #   pip install -r requirements.txt
@@ -82,7 +87,7 @@ import streamlit as st
 from libpysal.weights import KNN
 from esda.moran import Moran, Moran_Local
 
-VERSION = "v17"
+VERSION = "v18"
 
 BASE = ("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/"
         "csse_covid_19_data/")
