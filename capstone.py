@@ -3,7 +3,7 @@
 # Course:   140.628.81 Data Science for Public Health in Python, Fall 2026
 # Author:   Genie Tang (gtang10@jh.edu)
 # Script:   capstone.py
-# Version:  v4
+# Version:  v17
 #
 # Version log
 #   v1 (2026-10-19): First complete version. Loads the JHU CSSE global time
@@ -17,6 +17,44 @@
 #       country, a fixed color per country that does not change when other
 #       countries are added or removed, and a custom theme (.streamlit/config.toml). Same data
 #       preparation as v1.
+#   v3-v8 (2026-10-21 to 2026-10-23): Added the World map tab (every country
+#       shaded, selected countries outlined, ranked table), the Spatial
+#       statistics tab (global Moran's I, LISA cluster map and Moran
+#       scatterplot, PySAL), the Alerts tab (EARS C2 aberration detection),
+#       and the Summary table, How to use and About the data tabs. Added
+#       options for negative daily values, per 100,000 rates, a log scale and
+#       a date-range slider. Set a colour palette checked for colour-blind
+#       separation, bundled the map outlines in static/world_110m.json so the
+#       maps draw without the Plotly CDN, and put a Reset map view button on
+#       every map.
+#   v9 (2026-10-24): No change to the app itself. The version is raised so the
+#       script, the write-up and the zip all carry the same number.
+#   v10 (2026-10-24): No change to the app itself. The write-up was rebuilt so
+#       the daily-cases chart is back and larger, and the whole page fits one
+#       sheet. The version is raised to keep the package on one number.
+#   v11 (2026-10-24): No change to the app itself. Rebuilt the write-up so the
+#       chart is embedded as a proper .png part (Word reported the v10 file as
+#       unreadable) and so the page keeps clear room at the foot.
+#   v12 (2026-10-24): No change to the app itself. The write-up now sets a
+#       fixed line height instead of a multiple of the font's own metrics, so
+#       the page length no longer depends on how Century Gothic is measured,
+#       and the chart is drawn at the page width instead of cropped to fit.
+#   v13 (2026-10-24): No change to the app itself. The write-up runs to two
+#       pages, restoring the full v5 text, and carries three figures drawn from
+#       the same CSSE data: daily new cases, cumulative cases per 100,000, and
+#       a world map of cumulative rates.
+#   v14 (2026-10-24): No change to the app itself. Three long sentences in the
+#       write-up were each split in two. A one-page version of the write-up is
+#       kept alongside the two-page one.
+#   v15 (2026-10-24): No change to the app itself. The write-up is the two-page
+#       document with three figures. Only one write-up is issued per version,
+#       so there is no second file with a similar name.
+#   v16 (2026-10-24): No change to the app itself. The write-up text is exactly
+#       the v13 text; the three sentences that had been split in v14 and v15
+#       are back as they were written in v13.
+#   v17 (2026-10-24): No change to the app itself. The write-up keeps the full
+#       v13 content with the three over-long sentences each split in two, so
+#       no sentence runs past 30 words.
 #
 # How to run locally
 #   pip install -r requirements.txt
@@ -44,7 +82,7 @@ import streamlit as st
 from libpysal.weights import KNN
 from esda.moran import Moran, Moran_Local
 
-VERSION = "v4"
+VERSION = "v17"
 
 BASE = ("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/"
         "csse_covid_19_data/")
@@ -69,12 +107,22 @@ NON_COUNTRIES = {"Diamond Princess", "MS Zaandam", "Summer Olympics 2020",
 # shipped in static/ (and static serving is on), use that instead so the maps
 # also work where the CDN is blocked. Either way the app runs.
 import os
-MAPCFG = ({"topojsonURL": "app/static/"}
-          if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                         "static", "world_110m.json"))
-          and os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                          ".streamlit", "config.toml"))
-          else {})
+# Map toolbar: always visible, so the reset button is there after a zoom, with
+# the clutter buttons removed. The topojson line points Plotly at the outline
+# file shipped in static/ when that folder is present.
+MAPCFG = {
+    "displayModeBar": True,
+    "displaylogo": False,
+    "scrollZoom": True,
+    "modeBarButtonsToRemove": ["select2d", "lasso2d", "toggleSpikelines",
+                               "hoverClosestGeo", "hoverCompareCartesian"],
+    "toImageButtonOptions": {"format": "png", "scale": 2, "filename": "covid_map"},
+}
+if (os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                "static", "world_110m.json"))
+        and os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                        ".streamlit", "config.toml"))):
+    MAPCFG["topojsonURL"] = "app/static/"
 
 PALETTE = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#6250d6"]
 MAX_COUNTRIES = len(PALETTE)
@@ -250,6 +298,21 @@ def summary_table(data, countries, start, end):
     return pd.DataFrame(rows)
 
 
+def map_with_reset(fig, name, label="Reset map view"):
+    """Draw a map with a Reset button above it. The button bumps a counter that
+    is part of the chart's key, so Streamlit draws a fresh chart and the view
+    returns to the whole world."""
+    cnt_key = f"_mapreset_{name}"
+    if cnt_key not in st.session_state:
+        st.session_state[cnt_key] = 0
+    _, right = st.columns([5, 1])
+    with right:
+        if st.button(label, key=f"btn_{name}", width="stretch"):
+            st.session_state[cnt_key] += 1
+    st.plotly_chart(fig, width="stretch", config=MAPCFG,
+                    key=f"{name}_{st.session_state[cnt_key]}")
+
+
 def fmt(value, decimals):
     if pd.isna(value):
         return "n/a"
@@ -323,7 +386,7 @@ with st.sidebar:
     st.selectbox("Add a country",
                  [c for c in all_countries if c not in st.session_state.countries],
                  index=None, placeholder="Type or pick a country", key="to_add")
-    st.button("Add", width="stretch", on_click=add_country)
+    st.button("Add", width="stretch", on_click=add_country, key="add_country")
     chosen = st.multiselect("Selected countries (click x to remove)",
                             all_countries, key="countries",
                             max_selections=MAX_COUNTRIES)
@@ -513,21 +576,19 @@ else:
                 hovertemplate="<b>%{text}</b><br>" + count_col +
                               ": %{customdata[0]:,.0f}<br>" + size_col +
                               ": %{customdata[1]:,.1f}<extra></extra>"))
+            # An explicit view, so the toolbar's reset button returns to it.
             fig.update_geos(projection_type="natural earth", showcountries=True,
                             countrycolor="#d9d9d4", landcolor="#f3f3ef",
                             oceancolor="#ffffff", showocean=True, coastlinecolor="#d9d9d4",
-                            showframe=False)
+                            showframe=False, lonaxis_range=[-180, 180],
+                            lataxis_range=[-58, 84])
             fig.update_layout(height=520, margin=dict(l=0, r=0, t=40, b=0),
                               paper_bgcolor="white",
                               title=dict(text=f"{measure} per 100,000 people, "
                                               f"{start:%b %d, %Y} to {end:%b %d, %Y} "
                                               "(bubble area)",
                                          font=dict(size=18, color=INK), x=0))
-            # Country outlines are served from the app's own static folder
-            # (static/world_110m.json) instead of Plotly's CDN, so the map
-            # also works where outside scripts are blocked.
-            st.plotly_chart(fig, width="stretch",
-                            config=MAPCFG)
+            map_with_reset(fig, "bubble")
             st.caption("Bubble area is proportional to the rate per 100,000 in the "
                        "selected date window. Colors match the chart.")
 
@@ -571,13 +632,14 @@ else:
                 hoverinfo="skip", showlegend=False))
         fig.update_geos(projection_type="natural earth", showcountries=False,
                         landcolor="#f3f3ef", showocean=True, oceancolor="#ffffff",
-                        coastlinecolor="#d9d9d4", showframe=False, lataxis_range=[-58, 84])
+                        coastlinecolor="#d9d9d4", showframe=False,
+                        lonaxis_range=[-180, 180], lataxis_range=[-58, 84])
         fig.update_layout(height=560, margin=dict(l=0, r=0, t=40, b=0),
                           paper_bgcolor="white",
                           title=dict(text=f"{z_label} in every country, "
                                           f"{start:%b %d, %Y} to {end:%b %d, %Y}",
                                      font=dict(size=18, color=INK), x=0))
-        st.plotly_chart(fig, width="stretch", config=MAPCFG)
+        map_with_reset(fig, "world")
         st.caption("Shading uses one blue scale from light to dark; the darkest step "
                    "starts at the 98th percentile so a few extreme values do not "
                    "flatten the rest. Selected countries are outlined in orange. "
@@ -648,13 +710,13 @@ else:
             fig.update_geos(projection_type="natural earth", showcountries=False,
                             landcolor="#f3f3ef", showocean=True, oceancolor="#ffffff",
                             coastlinecolor="#d9d9d4", showframe=False,
-                            lataxis_range=[-58, 84])
+                            lonaxis_range=[-180, 180], lataxis_range=[-58, 84])
             fig.update_layout(height=460, margin=dict(l=0, r=0, t=40, b=0),
                               paper_bgcolor="white",
                               title=dict(text=f"LISA clusters of {measure.lower()} per "
                                               "100,000 (p < 0.05)",
                                          font=dict(size=16, color=INK), x=0))
-            st.plotly_chart(fig, width="stretch", config=MAPCFG)
+            map_with_reset(fig, "lisa")
             counts = sp["cluster"].value_counts().reindex(order).fillna(0).astype(int)
             st.caption("  ·  ".join(f"{c}: {n}" for c, n in counts.items())
                        + ". Selected countries are outlined in orange.")
