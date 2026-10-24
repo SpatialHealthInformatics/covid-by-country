@@ -3,7 +3,7 @@
 # Course:   140.628.81 Data Science for Public Health in Python, Fall 2026
 # Author:   Genie Tang (gtang10@jh.edu)
 # Script:   capstone.py
-# Version:  v23
+# Version:  v24
 #
 # Version log
 #   v1 (2026-10-19): First complete version. Loads the JHU CSSE global time
@@ -79,6 +79,11 @@
 #       submission and the deployed app.
 #   v23 (2026-10-24): No change to the app. The write-up now says which four
 #       countries open on first load and why those four were chosen.
+#   v24 (2026-10-24): Map fix. Plotly fetches the base map for every geo figure
+#       from its CDN, and where that fetch is blocked the maps draw nothing
+#       while the rest of the page is fine. The app now serves the bundled
+#       copy of the outlines whenever static/world_110m.json sits beside the
+#       script, and the Map tab says so when that file is absent.
 #
 # How to run locally
 #   pip install -r requirements.txt
@@ -106,7 +111,7 @@ import streamlit as st
 from libpysal.weights import KNN
 from esda.moran import Moran, Moran_Local
 
-VERSION = "v23"
+VERSION = "v24"
 
 BASE = ("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/"
         "csse_covid_19_data/")
@@ -142,10 +147,15 @@ MAPCFG = {
                                "hoverClosestGeo", "hoverCompareCartesian"],
     "toImageButtonOptions": {"format": "png", "scale": 2, "filename": "covid_map"},
 }
-if (os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                "static", "world_110m.json"))
-        and os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                        ".streamlit", "config.toml"))):
+# Plotly downloads the base map for every geo figure from its CDN. Where that
+# download is blocked the maps come up empty while the other charts still draw,
+# which is hard to spot. A copy of the outlines ships in static/, and Streamlit
+# serves it (enableStaticServing in .streamlit/config.toml), so the app can
+# supply its own base map. Both files have to sit next to this script.
+MAP_OUTLINES = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "static", "world_110m.json")
+MAPS_SERVED_LOCALLY = os.path.exists(MAP_OUTLINES)
+if MAPS_SERVED_LOCALLY:
     MAPCFG["topojsonURL"] = "app/static/"
 
 PALETTE = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#6250d6"]
@@ -578,6 +588,10 @@ else:
 
     # ---- Map tab --------------------------------------------------------------
     with tab_map:
+        if not MAPS_SERVED_LOCALLY:
+            st.caption("Map outlines are being fetched from the Plotly CDN. "
+                       "If the map is blank, static/world_110m.json is missing "
+                       "from the folder next to this script.")
         table = summary_table(data, chosen, start, end)
         geo = table.merge(country_info[["lat", "lon"]], left_on="Country",
                           right_index=True, how="left")
