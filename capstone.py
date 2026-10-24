@@ -3,7 +3,7 @@
 # Course:   140.628.81 Data Science for Public Health in Python, Fall 2026
 # Author:   Genie Tang (gtang10@jh.edu)
 # Script:   capstone.py
-# Version:  v30
+# Version:  v31
 #
 # Version log
 #   v1 (2026-10-19): First complete version. Loads the JHU CSSE global time
@@ -112,6 +112,9 @@
 #       list of allowed buttons instead of a list of removals, so only buttons
 #       that act on the click itself can appear and Plotly's "Share chart"
 #       button cannot return.
+#   v31 (2026-10-24): Spatial Statistics is the first tab, so the app opens on
+#       the cluster map and its four cards. The cards are given a minimum
+#       height so they stay level when one caption wraps further than the rest.
 #
 # How to run locally
 #   pip install -r requirements.txt
@@ -139,7 +142,7 @@ import streamlit as st
 from libpysal.weights import KNN
 from esda.moran import Moran, Moran_Local
 
-VERSION = "v30"
+VERSION = "v31"
 
 BASE = ("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/"
         "csse_covid_19_data/")
@@ -438,7 +441,10 @@ st.markdown(
     .tile .sub {font-size: 0.8rem; color: #52514e; margin-top: 6px; line-height: 1.35;}
     /* Cards in the same style as the portfolio site: a pastel fill, a border
        a shade deeper, and a 6px edge in the card's own colour. */
-    .stile {border-radius: 10px; padding: 16px 18px 14px 18px; height: 100%;
+    /* min-height keeps the four cards level when one line of the caption
+       wraps and the others do not. */
+    .stile {border-radius: 10px; padding: 16px 18px 14px 18px;
+            height: 100%; min-height: 152px; box-sizing: border-box;
             border: 1px solid transparent; border-left-width: 6px;}
     .stile .name {font-size: 0.95rem; font-weight: 600;}
     .stile .big {font-size: 1.9rem; font-weight: 600; margin-top: 4px;
@@ -540,9 +546,9 @@ st.markdown(
     f"COVID-19 time series (<a href='{REPO_URL}'>GitHub</a>). App {VERSION}.</p>",
     unsafe_allow_html=True)
 
-(tab_chart, tab_map, tab_world, tab_spatial, tab_alerts, tab_table,
+(tab_spatial, tab_chart, tab_map, tab_world, tab_alerts, tab_table,
  tab_help, tab_about) = st.tabs(
-    ["Chart", "Map", "World Map", "Spatial Statistics", "Alerts",
+    ["Spatial Statistics", "Chart", "Map", "World Map", "Alerts",
      "Summary Table", "User Guide", "About the Data"])
 
 if not chosen:
@@ -798,7 +804,7 @@ else:
         # Fill, border and accent are the portfolio site's own card colours.
         tiles = [
             ("Global Moran's I", f"{I:.3f}", "#FBE7E6", "#F0CBC8", "#A33E50",
-             f"Expected under no pattern {EI:.3f}<br>{verdict}"),
+             f"{verdict}<br>Expected {EI:.3f} under no pattern"),
             ("Permutation p-value", p_txt, "#E3F2F3", "#C3E0E2", "#16707E",
              "999 random re-assignments<br>of the rates to countries"),
             ("High-High countries", f"{hh}", "#FFF7D1", "#F7E08A", "#8C6D00",
