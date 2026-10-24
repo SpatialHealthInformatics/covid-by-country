@@ -3,7 +3,7 @@
 # Course:   140.628.81 Data Science for Public Health in Python, Fall 2026
 # Author:   Genie Tang (gtang10@jh.edu)
 # Script:   capstone.py
-# Version:  v31
+# Version:  v38
 #
 # Version log
 #   v1 (2026-10-19): First complete version. Loads the JHU CSSE global time
@@ -115,6 +115,10 @@
 #   v31 (2026-10-24): Spatial Statistics is the first tab, so the app opens on
 #       the cluster map and its four cards. The cards are given a minimum
 #       height so they stay level when one caption wraps further than the rest.
+#   v38 (2026-10-24): Every chart and map title moves out of the figure to a
+#       heading above it. Plotly draws its toolbar at the top right of the plot
+#       and the title inside the same box, so a long title ran underneath the
+#       icons at narrower window widths.
 #
 # How to run locally
 #   pip install -r requirements.txt
@@ -142,7 +146,7 @@ import streamlit as st
 from libpysal.weights import KNN
 from esda.moran import Moran, Moran_Local
 
-VERSION = "v31"
+VERSION = "v38"
 
 BASE = ("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/"
         "csse_covid_19_data/")
@@ -621,8 +625,7 @@ else:
                     line=dict(color=colors[c], width=2),
                     hovertemplate=hover, connectgaps=False))
             fig.update_layout(
-                title=dict(text=y_title.capitalize(), font=dict(size=18, color=INK),
-                           x=0, xanchor="left"),
+                title=None,
                 height=520, hovermode="x unified",
                 plot_bgcolor="white", paper_bgcolor="white",
                 legend=dict(orientation="h", y=-0.14, title=None),
@@ -633,6 +636,7 @@ else:
                            tickformat=",.0f" if decimals == 0 else ",.2~f"),
                 font=dict(color=INK),
             )
+            st.markdown(f"**{y_title.capitalize()}**")
             st.plotly_chart(fig, width="stretch", config=CHARTCFG)
         else:
             n = len(chosen)
@@ -649,8 +653,7 @@ else:
                     line=dict(color=colors[c], width=2), hovertemplate=hover,
                     showlegend=False, connectgaps=False), row=r + 1, col=k + 1)
             fig.update_layout(
-                title=dict(text=y_title.capitalize(), font=dict(size=18, color=INK),
-                           x=0, xanchor="left"),
+                title=None,
                 height=max(420, 280 * rows), plot_bgcolor="white",
                 paper_bgcolor="white", hovermode="x unified",
                 margin=dict(l=10, r=10, t=70, b=10), font=dict(color=INK))
@@ -661,6 +664,7 @@ else:
             for ann in fig.layout.annotations:
                 ann.font.size = 14
                 ann.font.color = INK
+            st.markdown(f"**{y_title.capitalize()}**")
             st.plotly_chart(fig, width="stretch", config=CHARTCFG)
 
         st.caption("Hover for every country's value on a date. Drag on the chart "
@@ -705,10 +709,9 @@ else:
                             lataxis_range=[-58, 84])
             fig.update_layout(height=520, margin=dict(l=0, r=0, t=40, b=0),
                               paper_bgcolor="white",
-                              title=dict(text=f"{measure} per 100,000 people, "
-                                              f"{start:%b %d, %Y} to {end:%b %d, %Y} "
-                                              "(bubble area)",
-                                         font=dict(size=18, color=INK), x=0))
+                              title=None)
+            st.markdown(f"**{measure} per 100,000 people** · "
+                        f"{start:%b %d, %Y} to {end:%b %d, %Y} · bubble area")
             map_with_reset(fig, "bubble")
             st.caption("Bubble area is proportional to the rate per 100,000 in the "
                        "selected date window. Colors match the chart.")
@@ -757,9 +760,9 @@ else:
                         lonaxis_range=[-180, 180], lataxis_range=[-58, 84])
         fig.update_layout(height=560, margin=dict(l=0, r=0, t=40, b=0),
                           paper_bgcolor="white",
-                          title=dict(text=f"{z_label} in every country, "
-                                          f"{start:%b %d, %Y} to {end:%b %d, %Y}",
-                                     font=dict(size=18, color=INK), x=0))
+                          title=None)
+        st.markdown(f"**{z_label} in every country** · "
+                    f"{start:%b %d, %Y} to {end:%b %d, %Y}")
         map_with_reset(fig, "world")
         st.caption("Shading uses one blue scale from light to dark; the darkest step "
                    "starts at the 98th percentile so a few extreme values do not "
@@ -855,9 +858,9 @@ else:
                             lonaxis_range=[-180, 180], lataxis_range=[-58, 84])
             fig.update_layout(height=460, margin=dict(l=0, r=0, t=40, b=0),
                               paper_bgcolor="white",
-                              title=dict(text=f"LISA clusters of {measure.lower()} per "
-                                              "100,000 (p < 0.05)",
-                                         font=dict(size=16, color=INK), x=0))
+                              title=None)
+            st.markdown(f"**LISA clusters** · {measure.lower()} per 100,000 · "
+                        "p below 0.05")
             map_with_reset(fig, "lisa")
             counts = sp["cluster"].value_counts().reindex(order).fillna(0).astype(int)
             st.caption("  ·  ".join(f"{c}: {n}" for c, n in counts.items())
@@ -890,13 +893,13 @@ else:
             fig2.add_vline(x=0, line_color=GRID)
             fig2.update_layout(height=460, plot_bgcolor="white", paper_bgcolor="white",
                                margin=dict(l=10, r=10, t=40, b=10),
-                               title=dict(text="Moran scatterplot",
-                                          font=dict(size=16, color=INK), x=0),
+                               title=None,
                                xaxis=dict(title="Standardised log rate (z)",
                                           gridcolor=GRID, zeroline=False),
                                yaxis=dict(title="Spatial lag of z (neighbours' mean)",
                                           gridcolor=GRID, zeroline=False),
                                legend=dict(orientation="h", y=-0.25, font=dict(size=11)))
+            st.markdown("**Moran scatterplot**")
             st.plotly_chart(fig2, width="stretch", config=CHARTCFG)
 
         st.caption(
@@ -955,9 +958,7 @@ else:
                 "Day of largest C2": (c2_w.idxmax().strftime("%b %d, %Y")
                                       if c2_w.notna().any() else "none"),
             })
-        fig.update_layout(title=dict(text=f"Daily {measure.lower()} with EARS C2 alerts "
-                                          f"(threshold {thr:g} SD)",
-                                     font=dict(size=18, color=INK), x=0),
+        fig.update_layout(title=None,
                           height=max(420, 280 * rows), plot_bgcolor="white",
                           paper_bgcolor="white", hovermode="x unified",
                           margin=dict(l=10, r=10, t=70, b=10), font=dict(color=INK),
@@ -967,6 +968,8 @@ else:
         for ann in fig.layout.annotations:
             ann.font.size = 14
             ann.font.color = INK
+        st.markdown(f"**Daily {measure.lower()} with EARS C2 alerts** · "
+                    f"threshold {thr:g} SD")
         st.plotly_chart(fig, width="stretch", config=CHARTCFG)
         st.dataframe(pd.DataFrame(summary_rows), hide_index=True, width="stretch")
         st.caption(
