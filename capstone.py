@@ -3,7 +3,7 @@
 # Course:   140.628.81 Data Science for Public Health in Python, Fall 2026
 # Author:   Genie Tang (gtang10@jh.edu)
 # Script:   capstone.py
-# Version:  v18
+# Version:  v22
 #
 # Version log
 #   v1 (2026-10-19): First complete version. Loads the JHU CSSE global time
@@ -60,6 +60,23 @@
 #       an unrelated template, now rebuilt from this deck's own 10 slides; a
 #       stray "28" was removed from the closing slide; and the write-up no
 #       longer carries an empty comments part.
+#   v19 (2026-10-24): Japan added to the countries shown on first load, so the
+#       opening view is US, United Kingdom, South Korea and Japan. Japan gives
+#       a second late-wave country with a very different per-capita outcome
+#       (26,345 per 100,000 against South Korea's 59,715). Nothing else in the
+#       app changed. The two line figures in the write-up were redrawn to
+#       match, and the demo slide now names the four.
+#   v20 (2026-10-24): The countries shown on first load are US, United Kingdom
+#       and Japan. Three keeps the opening view readable, and the user adds or
+#       removes any country from the sidebar. The two line figures and the
+#       demo slide were redrawn to match.
+#   v21 (2026-10-24): The countries shown on first load are US, United Kingdom,
+#       South Korea and Japan. South Korea is kept because its ranking changes
+#       when the view switches to per 100,000 people, which is the case for
+#       that option. The figures and the demo slide match the four.
+#   v22 (2026-10-24): No change to the app. The script inside the zip is named
+#       capstone.py, as the assignment asks, so the same file serves both the
+#       submission and the deployed app.
 #
 # How to run locally
 #   pip install -r requirements.txt
@@ -87,7 +104,7 @@ import streamlit as st
 from libpysal.weights import KNN
 from esda.moran import Moran, Moran_Local
 
-VERSION = "v18"
+VERSION = "v22"
 
 BASE = ("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/"
         "csse_covid_19_data/")
@@ -357,7 +374,7 @@ max_date = data["date"].max().date()
 # Countries the user has added, and the color each one was given when it was
 # first added. Both live in session state so they survive reruns.
 if "countries" not in st.session_state:
-    st.session_state.countries = ["US", "United Kingdom", "Korea, South"]
+    st.session_state.countries = ["US", "United Kingdom", "Korea, South", "Japan"]
 if "colors" not in st.session_state:
     st.session_state.colors = {}
 
