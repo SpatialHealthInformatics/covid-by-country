@@ -3,7 +3,7 @@
 # Course:   140.628.81 Data Science for Public Health in Python, Fall 2026
 # Author:   Genie Tang (gtang10@jh.edu)
 # Script:   capstone.py
-# Version:  v22
+# Version:  v23
 #
 # Version log
 #   v1 (2026-10-19): First complete version. Loads the JHU CSSE global time
@@ -77,6 +77,8 @@
 #   v22 (2026-10-24): No change to the app. The script inside the zip is named
 #       capstone.py, as the assignment asks, so the same file serves both the
 #       submission and the deployed app.
+#   v23 (2026-10-24): No change to the app. The write-up now says which four
+#       countries open on first load and why those four were chosen.
 #
 # How to run locally
 #   pip install -r requirements.txt
@@ -104,7 +106,7 @@ import streamlit as st
 from libpysal.weights import KNN
 from esda.moran import Moran, Moran_Local
 
-VERSION = "v22"
+VERSION = "v23"
 
 BASE = ("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/"
         "csse_covid_19_data/")
