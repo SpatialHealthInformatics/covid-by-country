@@ -3,7 +3,7 @@
 # Course:   140.628.81 Data Science for Public Health in Python, Fall 2026
 # Author:   Genie Tang (gtang10@jh.edu)
 # Script:   capstone.py
-# Version:  v45
+# Version:  v46
 #
 # Version log
 #   v1 (2026-10-19): First complete version. Loads the JHU CSSE global time
@@ -146,7 +146,7 @@ import streamlit as st
 from libpysal.weights import KNN
 from esda.moran import Moran, Moran_Local
 
-VERSION = "v45"
+VERSION = "v46"
 
 BASE = ("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/"
         "csse_covid_19_data/")
@@ -433,6 +433,15 @@ st.markdown(
     @import url('https://fonts.googleapis.com/css2?family=Didact+Gothic&display=swap');
     html, body, [class*="st-"], .stApp, button, input, select, textarea {
         font-family: "Century Gothic", CenturyGothic, AppleGothic, "Didact Gothic", sans-serif;
+    }
+    /* Streamlit draws its own icons (the sidebar collapse arrows, the help dot)
+       with a ligature font. The rule above matches those elements too, which
+       turns the ligature into its literal name, such as
+       keyboard_double_arrow_left. Give the icon elements their font back. */
+    [data-testid="stIconMaterial"], span[data-testid="stIconMaterial"],
+    .material-icons, .material-symbols-rounded, .material-symbols-outlined {
+        font-family: "Material Symbols Rounded", "Material Symbols Outlined",
+                     "Material Icons" !important;
     }
     .block-container {padding-top: 2.2rem; padding-bottom: 2rem;}
     .tile {border: 1px solid #e6e6e2; border-radius: 12px; padding: 14px 16px 12px 16px;
