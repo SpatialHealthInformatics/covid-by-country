@@ -3,7 +3,7 @@
 # Course:   140.628.81 Data Science for Public Health in Python, Fall 2026
 # Author:   Genie Tang (gtang10@jh.edu)
 # Script:   capstone.py
-# Version:  v44
+# Version:  v45
 #
 # Version log
 #   v1 (2026-10-19): First complete version. Loads the JHU CSSE global time
@@ -146,7 +146,7 @@ import streamlit as st
 from libpysal.weights import KNN
 from esda.moran import Moran, Moran_Local
 
-VERSION = "v44"
+VERSION = "v45"
 
 BASE = ("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/"
         "csse_covid_19_data/")
@@ -1068,8 +1068,4 @@ country positions, 999 permutations. **Alerts.** EARS C2 (7-day baseline, 2-day 
 3 SD threshold), the aberration-detection method used in syndromic surveillance.
 
 **Built with** Python, Streamlit, pandas, Plotly, PySAL (esda, libpysal). Code: `capstone.py` {VERSION}.
-
-Author. Genie Tang, research scientist, spatial epidemiologist; doctoral research in
-public health informatics, Johns Hopkins Bloomberg School of Public Health. Portfolio:
-[spatialhealthinformatics.github.io](https://spatialhealthinformatics.github.io).
 """)
