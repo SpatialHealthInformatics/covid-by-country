@@ -3,7 +3,7 @@
 # Course:   140.628.81 Data Science for Public Health in Python, Fall 2026
 # Author:   Genie Tang (gtang10@jh.edu)
 # Script:   capstone.py
-# Version:  v38
+# Version:  v42
 #
 # Version log
 #   v1 (2026-10-19): First complete version. Loads the JHU CSSE global time
@@ -146,7 +146,7 @@ import streamlit as st
 from libpysal.weights import KNN
 from esda.moran import Moran, Moran_Local
 
-VERSION = "v38"
+VERSION = "v42"
 
 BASE = ("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/"
         "csse_covid_19_data/")
@@ -1069,8 +1069,6 @@ country positions, 999 permutations. **Alerts.** EARS C2 (7-day baseline, 2-day 
 
 **Built with** Python, Streamlit, pandas, Plotly, PySAL (esda, libpysal). Code: `capstone.py` {VERSION}.
 
-**About the author.** Genie Tang is an epidemiologist and a DrPH student at the Johns
-Hopkins Bloomberg School of Public Health, with a master's in spatial analysis for public
-health. Her work combines surveillance systems, spatial statistics and public health
-informatics. Portfolio: [spatialhealthinformatics.github.io](https://spatialhealthinformatics.github.io).
+Genie Tang · Doctoral research in public health informatics, Johns Hopkins Bloomberg
+School of Public Health · [spatialhealthinformatics.github.io](https://spatialhealthinformatics.github.io)
 """)
