@@ -3,7 +3,7 @@
 # Course:   140.628.81 Data Science for Public Health in Python, Fall 2026
 # Author:   Genie Tang (gtang10@jh.edu)
 # Script:   capstone.py
-# Version:  v46
+# Version:  v48
 #
 # Version log
 #   v1 (2026-10-19): First complete version. Loads the JHU CSSE global time
@@ -146,7 +146,7 @@ import streamlit as st
 from libpysal.weights import KNN
 from esda.moran import Moran, Moran_Local
 
-VERSION = "v46"
+VERSION = "v48"
 
 BASE = ("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/"
         "csse_covid_19_data/")
@@ -284,8 +284,10 @@ def prepare_view(data, countries, measure, count_type, per_capita,
     view = view.sort_values(["country", "date"])
 
     if count_type == "Daily new":
+        hidden = None
         if negatives == "Hide (show as a gap)":
-            view.loc[view["daily"] < 0, "daily"] = float("nan")
+            hidden = view["daily"] < 0
+            view.loc[hidden, "daily"] = float("nan")
         elif negatives == "Set to zero":
             view["daily"] = view["daily"].clip(lower=0)
         # "Keep as reported" leaves the corrections in place.
@@ -294,6 +296,11 @@ def prepare_view(data, countries, measure, count_type, per_capita,
             # first days of a chosen window still use a full week of data.
             view["daily"] = (view.groupby("country")["daily"]
                              .transform(lambda s: s.rolling(7, min_periods=1).mean()))
+            if hidden is not None:
+                # The rolling mean skips missing days, which would fill the
+                # hidden correction back in with an average. Put the gap back
+                # so "Hide (show as a gap)" means what it says.
+                view.loc[hidden, "daily"] = float("nan")
         view["value"] = view["daily"]
     else:
         view["value"] = view["cumulative"]
@@ -332,7 +339,7 @@ def world_window(data, measure, start, end):
 
 @st.cache_data(show_spinner="Running Moran's I and LISA...")
 def spatial_stats(world, k, permutations=999):
-    """Global Moran's I and local Moran (LISA) on log10 rate per 100,000.
+    """Global Moran's I and local Moran (LISA) on log10(rate + 1) per 100,000.
 
     Weights: k nearest neighbours on great-circle distance between the CSSE
     country positions, row-standardised. Rates are log-transformed because
@@ -341,10 +348,19 @@ def spatial_stats(world, k, permutations=999):
     """
     df = world.dropna(subset=["rate", "lat", "lon"]).copy()
     df = df[df["population"] > 0]
+    # A downward correction can make a window total, and so the rate,
+    # negative. log10 is undefined there, so the rate is floored at zero
+    # before the transform. This matches the "Set to zero" option the app
+    # already offers for negative daily values, and it keeps every country
+    # in the analysis instead of silently dropping some.
+    df["rate"] = df["rate"].clip(lower=0)
     coords = df[["lon", "lat"]].to_numpy()
     w = KNN.from_array(coords, k=k, radius=6371.0)  # radius -> arc distance in km
     w.transform = "r"
     y = np.log10(df["rate"].to_numpy() + 1)
+    # esda's global Moran has no seed argument, so the permutation draw is
+    # seeded through numpy to make the p-value reproducible between runs.
+    np.random.seed(12345)
     gm = Moran(y, w, permutations=permutations)
     lm = Moran_Local(y, w, permutations=permutations, seed=12345)
     labels = {1: "High-High", 2: "Low-High", 3: "Low-Low", 4: "High-Low"}
@@ -356,9 +372,10 @@ def spatial_stats(world, k, permutations=999):
     return df, float(gm.I), float(gm.p_sim), float(gm.EI)
 
 
-def ears_c2(series, baseline=7, lag=2, threshold=3.0):
+def ears_c2(series, baseline=7, lag=3, threshold=3.0):
     """EARS C2: compare each day with the mean and SD of a 7-day baseline that
-    ends two days earlier. Alert when (x - mean) / sd exceeds the threshold.
+    ends three days earlier, leaving a two-day guard interval (t-1 and t-2)
+    between the baseline and the day being tested, as EARS C2 specifies. Alert when (x - mean) / sd exceeds the threshold.
     This is the aberration-detection method used in CDC's EARS and in many
     syndromic surveillance systems. A floor of 0.2 on the SD avoids dividing
     by zero on flat stretches, as in the EARS implementation."""
@@ -697,7 +714,10 @@ else:
         if geo.empty:
             st.info("None of the selected entries has a map position.")
         else:
-            size = geo[size_col].fillna(geo[size_col].min() if geo[size_col].notna().any() else 1)
+            # A downward correction can make a window rate negative, and a
+            # marker area cannot be. The size is floored at zero; the hover
+            # text still reports the signed value.
+            size = geo[size_col].fillna(0).clip(lower=0)
             fig = go.Figure(go.Scattergeo(
                 lat=geo["lat"], lon=geo["lon"], text=geo["Country"],
                 mode="markers+text", textposition="top center",
@@ -912,8 +932,12 @@ else:
             st.plotly_chart(fig2, width="stretch", config=CHARTCFG)
 
         st.caption(
-            "Method: rates per 100,000 for the selected date window, log10-transformed "
-            "because they are right-skewed. Spatial weights: each country's k nearest "
+            "Method: rates per 100,000 for the selected date window, transformed as "
+            "log10(rate + 1) because they are right-skewed and a window total can "
+            "be zero. A window whose corrections exceed its new cases gives a "
+            "negative rate, which has no logarithm; those rates are floored at "
+            "zero for this analysis only, and the signed value is still shown in "
+            "the Summary Table. Spatial weights: each country's k nearest "
             "neighbours by great-circle distance between the CSSE country positions, "
             "row-standardised. Global Moran's I and local Moran statistics from PySAL "
             "esda with 999 permutations. High-High: a high-rate country surrounded by "
@@ -1073,8 +1097,8 @@ these limits in mind.
 
 **Spatial statistics.** Global Moran's I and local Moran (LISA) from PySAL `esda`,
 with k-nearest-neighbour weights (`libpysal`) on great-circle distance between the CSSE
-country positions, 999 permutations. **Alerts.** EARS C2 (7-day baseline, 2-day lag,
-3 SD threshold), the aberration-detection method used in syndromic surveillance.
+country positions, 999 permutations. **Alerts.** EARS C2 (7-day baseline ending three days
+back, leaving a two-day guard interval, 3 SD threshold), the aberration-detection method used in syndromic surveillance.
 
 **Built with** Python, Streamlit, pandas, Plotly, PySAL (esda, libpysal). Code: `capstone.py` {VERSION}.
 """)
